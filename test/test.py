@@ -1,86 +1,123 @@
-from project.library import Library
 from unittest import TestCase, main
 
+from project.pet_shop import PetShop
 
-class Test(TestCase):
+
+class PetShopTests(TestCase):
+    VALID_NAME = "Pet Shop"
+    FOOD_NAME = "test food"
+    PET_NAME = "Petsy"
+
     def setUp(self) -> None:
-        self.library = Library("Library")
+        self.pet_shop = PetShop(self.VALID_NAME)
 
-    def test_library_raises_error_when_empty_string_is_passed(self):
+    def test_init_expect_to_set_correct_values(self):
+        ps = PetShop(self.VALID_NAME)
+        self.assertEqual(self.VALID_NAME, self.pet_shop.name)
+        self.assertListEqual([], self.pet_shop.pets)
+        self.assertDictEqual({}, self.pet_shop.food)
+
+    def test_add_food__when_quantity_is_negative__expect_to_throw(self):
         with self.assertRaises(ValueError) as context:
-            library = Library("")
+            self.pet_shop.add_food(self.FOOD_NAME, -1)
 
-        self.assertEqual("Name cannot be empty string!", str(context.exception))
+        self.assertEqual('Quantity cannot be equal to or less than 0', str(context.exception))
 
-    def test_library_initialization(self):
-        self.assertEqual("Library", self.library.name)
-        self.assertEqual({}, self.library.books_by_authors)
-        self.assertEqual({}, self.library.readers)
+    def test_add_food__when_name_not_in_pet_shop_expect_to_add_it(self):
+        self.pet_shop.add_food(self.FOOD_NAME, 10)
+        self.pet_shop.add_food("another", 15)
 
-    def test_add_book_should_add_author_and_title(self):
-        author = "Author"
-        first_title = "Title1"
-        second_title = "Title2"
-        self.library.add_book(author, first_title)
-        self.library.add_book(author, second_title)
+        self.assertEqual(10, self.pet_shop.food[self.FOOD_NAME])
+        self.assertEqual(15, self.pet_shop.food["another"])
 
-        self.assertEqual(1, len(self.library.books_by_authors))
-        self.assertTrue(author in self.library.books_by_authors)
-        self.assertEqual([first_title, second_title],self.library.books_by_authors[author])
+    def test_add_food__when_food_in_pet_shop_expect_to_increase_by_quantity(self):
+        self.pet_shop.add_food(self.FOOD_NAME, 10)
+        self.pet_shop.add_food(self.FOOD_NAME, 15)
+        self.pet_shop.add_food("another", 15)
 
-    def test_add_reader_should_add_the_reader(self):
-        reader_name = "Reader"
-        self.library.add_reader(reader_name)
+        self.assertEqual(25, self.pet_shop.food[self.FOOD_NAME])
+        self.assertEqual(15, self.pet_shop.food["another"])
 
-        self.assertEqual(1, len(self.library.readers))
-        self.assertTrue(reader_name in self.library.readers)
-        self.assertEqual([], self.library.readers[reader_name])
+    def test_add_food_when_food_not_in_petshop__expect_correct_message(self):
+        quantity = 10
+        result = self.pet_shop.add_food(self.FOOD_NAME, quantity)
 
-    def test_add_reader_should_return_error_message_when_reader_is_already_registered(self):
-        reader_name = "Reader"
-        self.library.add_reader(reader_name)
-        result = self.library.add_reader(reader_name)
+        self.assertEqual(f"Successfully added {quantity:.2f} grams of {self.FOOD_NAME}.", result)
 
-        self.assertEqual(f"{reader_name} is already registered in the {self.library.name} library.", result)
+    def test_add_pet_when_pet_not_in_petshop_expect_to_add_it(self):
+        result = self.pet_shop.add_pet(self.PET_NAME)
 
-    def test_rent_book_should_return_error_message_when_reader_is_not_registered(self):
-        reader_name = "reader"
-        result = self.library.rent_book("reader", "author", "title")
-        self.assertEqual(f"{reader_name} is not registered in the {self.library.name} Library.", result)
+        self.assertListEqual([self.PET_NAME], self.pet_shop.pets)
+        self.assertEqual(f"Successfully added {self.PET_NAME}.", result)
 
-    def test_rent_book_should_return_error_message_when_author_is_not_registered(self):
-        reader_name = "reader"
-        author_name = "author"
-        self.library.add_reader(reader_name)
+    def test_add_pet_when_pet_in_petshop_expect_to_raise(self):
+        result = self.pet_shop.add_pet(self.PET_NAME)
 
-        result = self.library.rent_book(reader_name, author_name, "title")
-        self.assertEqual(f"{self.library.name} Library does not have any {author_name}'s books.", result)
+        with self.assertRaises(Exception) as context:
+            self.pet_shop.add_pet(self.PET_NAME)
 
-    def test_rent_book_should_return_error_message_when_title_is_not_registered(self):
-        reader_name = "reader"
-        author_name = "author"
-        title = "title"
-        self.library.add_reader(reader_name)
-        self.library.add_book(author_name, "random title")
+        self.assertEqual("Cannot add a pet with the same name", str(context.exception))
 
-        result = self.library.rent_book(reader_name, author_name, title)
-        self.assertEqual(f"""{self.library.name} Library does not have {author_name}'s "{title}".""", result)
+    def test_feed_pet_when_pet_not_in_petshop_expect_to_raise(self):
+        with self.assertRaises(Exception) as context:
+            self.pet_shop.feed_pet(self.FOOD_NAME, self.PET_NAME)
 
-    def test_rent_book_should_properly_rent_book(self):
-        reader_name = "reader"
-        author_name = "author"
-        first_title = "title1"
-        second_title = "title2"
-        self.library.add_reader(reader_name)
-        self.library.add_book(author_name, first_title)
-        self.library.add_book(author_name, second_title)
+        self.assertEqual("Please insert a valid pet name", str(context.exception))
 
-        self.library.rent_book(reader_name, author_name, first_title)
+    def test_feed_pet_when_food_not_in_petshop_expect_to_return_correct_message(self):
+        self.pet_shop.add_pet(self.PET_NAME)
 
-        self.assertEqual([{author_name: first_title}], self.library.readers[reader_name])
-        self.assertEqual(1, len(self.library.books_by_authors[author_name]))
-        self.assertTrue(first_title not in self.library.books_by_authors[author_name])
-        self.assertTrue(second_title in self.library.books_by_authors[author_name])
+        result = self.pet_shop.feed_pet(self.FOOD_NAME, self.PET_NAME)
+
+        self.assertEqual(f"You do not have {self.FOOD_NAME}", result)
+
+    def test_feed_pet_when_food_is_99_expect_to_increase_by_1000_and_correct_message(self):
+        self.pet_shop.add_pet(self.PET_NAME)
+        self.pet_shop.add_food(self.FOOD_NAME, 99)
+
+        result = self.pet_shop.feed_pet(self.FOOD_NAME, self.PET_NAME)
+
+        self.assertEqual(99 + 1000, self.pet_shop.food[self.FOOD_NAME])
+        self.assertEqual("Adding food...", result)
+
+    def test_feed_pet_when_food_is_101_expect_to_decrease_by_100_and_correct_message(self):
+        self.pet_shop.add_pet(self.PET_NAME)
+        self.pet_shop.add_food(self.FOOD_NAME, 101)
+
+        result = self.pet_shop.feed_pet(self.FOOD_NAME, self.PET_NAME)
+
+        self.assertEqual(101 - 100, self.pet_shop.food[self.FOOD_NAME])
+        self.assertEqual\
+            (f"{self.PET_NAME} was successfully fed", result)
+
+    def test_repr_when_no_pets_expect_correct_result(self):
+        expected = f"""Shop {self.VALID_NAME}:
+Pets: """
+
+        actual = repr(self.pet_shop)
+
+        self.assertEqual(expected, actual)
+
+    def test_repr_when_single_pet_expect_correct_result(self):
+        self.pet_shop.add_pet(self.PET_NAME)
+        expected = f"""Shop {self.VALID_NAME}:
+Pets: {self.PET_NAME}"""
+
+        actual = repr(self.pet_shop)
+
+        self.assertEqual(expected, actual)
+
+    def test_repr_when_multiple_pets_expect_correct_result(self):
+        another_pet_name = self.PET_NAME + "2"
+        self.pet_shop.add_pet(self.PET_NAME)
+        self.pet_shop.add_pet(another_pet_name)
+
+        expected = f"""Shop {self.VALID_NAME}:
+Pets: {self.PET_NAME}, {another_pet_name}"""
+
+        actual = repr(self.pet_shop)
+
+        self.assertEqual(expected, actual)
 
 
 if __name__ == "__main__":
