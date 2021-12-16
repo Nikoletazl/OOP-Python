@@ -1,6 +1,6 @@
 class Appliance:
-    def __init__(self, cost: float):
-        self.cost = cost
+    def __init__(self, cost):
+        self.cost = cost  #single day
 
     def get_monthly_expense(self):
         return self.cost * 30
